@@ -22,20 +22,32 @@ const PASSWORD = "1234Cosmo";
     // auto scroll every  1 sec  for loadmore content
 
     const likeNumber = await page.$eval('#msite-pages-header-contents > div:nth-child(0n+2) >  div:nth-child(0n+4) > div > div > div > div > div', el => el.textContent);
-    console.log("likeNumber", likeNumber);
+    const htmlContents = await page.$eval('#msite-pages-header-contents', el => el.outerHTML);
+    // console.log("likeNumber", likeNumber);
+    // console.log('htmlContents',htmlContents);
 
     const body = await page.$("#pages_msite_body_contents");
+    const body2 = await page.$eval("#pages_msite_body_contents", x => x.outerHTML);
+    // console.log('body',body2);
     //  const div = await body.$('.story_body_container');
     //  const msg =  await div.$("div[data-ad-preview='message']");    
     const story = await body.$$('article')
+    
+    for (let item of story) { 
+      const like = await getPostLike(item);
+      const comment = await getPostComment(item);
+      const share = await getPostShare(item);
 
-    for (let item of story) {
-      const content = await item.$(".story_body_container  > div[data-ad-preview='message']");
-      const message = await getTextContent(content);
-      const link = await getLinkContent(content);
+      console.log('Like',like);
+      console.log('comment',comment);
+      console.log('share',share);
 
-      console.log("post  message", message);
-      console.log("link", link)
+      // const content = await item.$(".story_body_container  > div[data-ad-preview='message']");
+      // const message = await getTextContent(content);
+      // const link = await getLinkContent(content);
+
+      // console.log("post  message", message);
+      // console.log("link", link)
     }
 
 
@@ -78,15 +90,30 @@ const PASSWORD = "1234Cosmo";
 
     //Todo : scrape data
 
-
-
-
-
   }, 5000)
 
   // await browser.close();
 })();
 
+async function getPostLike(content) {
+  return like = await content.$eval(
+    'footer > div > div:nth-child(0n+1) > a > div:nth-child(0n+1) > div > div',
+    d => d.textContent
+  );
+}
+
+async function getPostComment(content) {
+  return comment = await content.$eval(
+    'footer > div > div:nth-child(0n+1) > a > div > div:nth-child(0n+2) > span:nth-child(0n+1)',
+    s => s.textContent
+  );
+}
+ async function getPostShare(content) {
+   return share = await content.$eval(
+     'footer > div > div:nth-child(0n+1) > a > div > div:nth-child(0n+2) > span:nth-child(0n+2)',
+     s => s.textContent
+    );
+ }
 
 async function getLinkContent(content) {
   //  get  all  link  in post 
