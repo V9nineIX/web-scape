@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const TARGET_PAGE = 'https://m.facebook.com/bnk48official.cherprang/posts/';
 const EMAIL = "CosmoCruz01@gmail.com";
 const PASSWORD = "1234Cosmo";
+const ITEM_TARGET_COUNT = 10;
 
 (async () => {
 
@@ -19,76 +20,37 @@ const PASSWORD = "1234Cosmo";
   setTimeout(async () => {
     await page.goto(TARGET_PAGE); //
     await page.setViewport({ width: 1200, height: 800 });
-    // auto scroll every  1 sec  for loadmore content
 
     const likeNumber = await page.$eval('#msite-pages-header-contents > div:nth-child(0n+2) >  div:nth-child(0n+4) > div > div > div > div > div', el => el.textContent);
     const htmlContents = await page.$eval('#msite-pages-header-contents', el => el.outerHTML);
     // console.log("likeNumber", likeNumber);
     // console.log('htmlContents',htmlContents);
 
-    const body = await page.$("#pages_msite_body_contents");
-    const body2 = await page.$eval("#pages_msite_body_contents", x => x.outerHTML);
-    // console.log('body',body2);
-    //  const div = await body.$('.story_body_container');
-    //  const msg =  await div.$("div[data-ad-preview='message']");    
-    const story = await body.$$('article')
-    
-    for (let item of story) { 
+    // const body = await page.$("#pages_msite_body_contents");
+    // const story = await body.$$('article')
+    // console.log("article length" , story.length)
+
+    const article = await scrapeInfiniteScrollItems(page,ITEM_TARGET_COUNT)
+
+    console.log("total item" , article.length);
+  
+
+    for (let item of article ) {
+      //Todo : scrape data
+      const content = await item.$(".story_body_container  > div[data-ad-preview='message']");
+      const message = await getTextContent(content);
+      const link = await getLinkContent(content);
+
+      console.log("post  message", message);
+      console.log("link", link)
+
       const like = await getPostLike(item);
       const comment = await getPostComment(item);
       const share = await getPostShare(item);
-
       console.log('Like',like);
       console.log('comment',comment);
       console.log('share',share);
-
-      // const content = await item.$(".story_body_container  > div[data-ad-preview='message']");
-      // const message = await getTextContent(content);
-      // const link = await getLinkContent(content);
-
-      // console.log("post  message", message);
-      // console.log("link", link)
     }
-
-
-    // console.log(linkArray);
-    // console.log("p" ,  p);
-    //  // const  l1  =  await link[0].$eval();
-    //  console.log("link" , link );
-
-    // console.log(link);
-
-    // for (let element of link) {
-
-    //      /// items.push(element.href);
-    // }
-    // const msg =  await div.$eval("div[data-ad-preview='message'] > span:nth-child(0n+1)" , m => m.textContent); 
-
-    // const  div = await body.$$eval('.story_body_container'  ,  nodes => nodes.map(  async( n )=> {
-    //      return n.$$eval("article" , a => a.outerHTML)
-    // })) 
-
-    // const  div = await body.$eval('.story_body_container');
-    //const  cont = await body.$$eval('.story_body_container');
-
-    //console.log("content" ,  content);
-
-    //  console.log("len" ,link);
-    //console.log("div", cont);
-
-    //  div.map( async( d ) => {
-    //       d.$$eval("")  
-    //  })
-
-    // const  div  = await body.$eval("" , el => el.outerHTML);
-
-    //console.log("body" , body);
-    // console.log("body" ,  body);
-
-
-    // await autoScroll(page);
-
-    //Todo : scrape data
 
   }, 5000)
 
@@ -149,4 +111,31 @@ async function autoScroll(page) {
       }, 1000);
     });
   });
+}
+
+
+/**  Use for  scorll  load more content  with stop by item limit number.
+ * 
+ * @param {object} page  //  page dom  object  for puppeteer
+ * @param {number} itemLimit //  stop scoroll when  limit Item
+ * @param {number} scrollDelay  //  scroll  deleay  in ms 
+ */
+async function scrapeInfiniteScrollItems(
+  page,
+  itemLimit ,
+  scrollDelay = 1000,
+) {
+  let items = [];
+  const body = await page.$("#pages_msite_body_contents");
+  try {
+    let previousHeight ;
+    while (items.length < itemLimit) {
+      items = await body.$$('article') //  get all  atrical  in  body contents
+      previousHeight = await page.evaluate('document.body.scrollHeight');
+      await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
+      await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`);
+      await page.waitFor(scrollDelay);
+    }
+  } catch(e) { }
+  return items;
 }
