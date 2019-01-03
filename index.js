@@ -110,15 +110,15 @@ async function getHashtagContent(content) {
   });
 
   var arr = [];
-  const x = await message.map((item,index) => {
+  const x = await Promise.all(message.map(async (item,index) => {
     var tagslistarr = item.split(' ');
-    const res = tagslistarr.map((item,index) => {
+    const res = await tagslistarr.map((item,index) => {
       if(item.indexOf('#') == 0){
         arr.push(item);  
       }
     });
-  });
-  
+  }));
+
   return arr;
 }
 
